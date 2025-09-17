@@ -102,24 +102,14 @@ export function MainInterface({
             "This game contains Denuvo Anti-Tamper, you'll have to first manually crack the game's executable and afterwards use the program, otherwise the game won't work."
           );
         } else {
-          const response = await fetch(
-            `https://store.steampowered.com/api/appdetails?appids=${appId}&l=english`
-          );
-          const data = await response.json();
-          if (data[appId]?.data?.drm_notice) {
-            setDrmWarning(
-              "This game may or may not work due to an external DRM notice on the Store Page."
-            );
-          } else {
-            setDrmWarning("");
-          }
+          // Pass through
         }
       } catch (error) {
         console.error(
           `[${new Date().toISOString()}] Failed to check DRM for App ID ${appId}:`,
           error
         );
-        setDrmWarning("");
+        setDrmWarning("Failed to check DRM status.");
       } finally {
         setIsDrmChecking(false);
       }
@@ -233,11 +223,7 @@ export function MainInterface({
             </div>
           )}
 
-          {isProcessing ? (
-            <>
-              {/* This keeps the stupid button hidden, lazy but works lmfao */}
-            </>
-          ) : (
+          {isProcessing ? null : (
             <Button
               onClick={handleStart}
               disabled={

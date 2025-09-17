@@ -20,7 +20,22 @@ export async function selectDirectory(): Promise<string | null> {
 }
 
 /**
- * Invokes the `cmd_apply_crack` Tauri command to apply Steamless DRM removal and Goldberg Steam Emulator.
+ * Checks for DRM using the Tauri `check_drm` command.
+ * @param appId - The Steam App ID as a string.
+ * @returns A promise that resolves to the DRM status message from the backend.
+ * @throws An error if the DRM check fails.
+ */
+export async function checkDrm(appId: string): Promise<string> {
+  try {
+    const result = await invoke<string>("cmd_check_drm", { appId });
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to check DRM: ${error}`);
+  }
+}
+
+/**
+ * Command that applies Steamless and Goldberg Steam Emulator.
  * @param appId - The Steam App ID as a string.
  * @param folderPath - The path to the game directory.
  * @param language - Optional language code for localization (e.g., "english").
@@ -32,12 +47,15 @@ export async function applyCrack(
   language?: string
 ): Promise<string> {
   try {
+    const drmResult = await checkDrm(appId);
+    console.log(`DRM Check Result: ${drmResult}`);
+
     const result = await invoke<string>("cmd_apply_crack", {
       appId,
       gameLocation: folderPath,
       language,
     });
-    return result;
+    return `DRM Check: ${drmResult}\nCrack Result: ${result}`;
   } catch (error) {
     throw new Error(`Failed to apply crack: ${error}`);
   }
