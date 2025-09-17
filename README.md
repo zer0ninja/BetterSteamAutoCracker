@@ -2,28 +2,14 @@
 
 BetterSteamAutoCracker is a Tauri-based desktop app for Windows that automates Steamless DRM removal and Goldberg Steam Emulator application for offline Steam game use.
 
-**⚠️ Legal Notice**: For educational and personal use only (e.g., playing games offline so you "own" them). Bypassing DRM or emulating Steam services violates Steam's Terms of Service and laws.
+**Legal Notice**: For educational and personal use only (e.g., playing games offline so you "own" them). Bypassing DRM or emulating Steam services violates Steam's Terms of Service and laws.
 
 ## Features
 
 - Removes Steam DRM with Steamless
 - Applies Goldberg Steam Emulator for achievements, DLCs, and languages
-- React + Tailwind CSS UI for selecting game folders and App IDs
 - Auto-downloads dependencies (DLLs, fonts, sounds) from S3
-- Real-time progress updates and logging
 - Backs up original files as `.svrn` and `Goldberg.zip`
-
-## Installation
-
-1. Download the latest `.exe` from [Releases](https://github.com/0xSovereign/BetterSteamAutoCracker/releases).
-2. Run the installer; dependencies auto-download to `%APPDATA%/sovereign.bsac.app`.
-
-## Quick Start
-
-1. Click "Browse" to select the game folder.
-2. Enter the Steam App ID (e.g., `1030300` for Hollow Knight: Silksong, find on [SteamDB](https://steamdb.info/)).
-3. Click "Crack".
-4. Launch the game.
 
 ## Building from Source
 
