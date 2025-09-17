@@ -1,0 +1,70 @@
+[package]
+name = "better-steam-autocracker"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["Sovereign"]
+edition = "2021"
+
+[lib]
+name = "better_steam_autocracker_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Windows
+windows = { version = "0.62.0", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+winreg = "0.55.0"
+winapi = { version = "0.3.9", features = ["winuser"] }
+
+# Tauri
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-http = "2"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
+
+# Serde
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# HTTP
+reqwest = { version = "0.12.23", features = ["json", "blocking", "rustls-tls"] }
+tokio = "1.47.1"
+
+# Archiving
+zip = "5.1.1"
+
+# Directories
+dirs = "6.0.0"
+
+# Logging
+log = "0.4.28"
+env_logger = "0.11.8"
+
+# Regex
+regex = "1.11.2"
+
+# File System
+walkdir = "2.5.0"
+
+# Steamworks
+steamworks-sys = "0.12.2"
+
+# Misc
+base64 = "0.22.1"
+scopeguard = "1.2.0"
+
+# Browser
+webbrowser = "1.0.5"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "z"
+strip = true
+panic = "abort"

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "BetterSteamAutoCracker",
+  "version": "0.1.0",
+  "identifier": "sovereign.bsac.app",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "BetterSteamAutoCracker",
+        "width": 900,
+        "height": 700,
+        "minWidth": 900,
+        "minHeight": 700,
+        "maxWidth": 1440,
+        "maxHeight": 900,
+        "maximizable": false,
+        "preventOverflow": true,
+        "center": true,
+        "decorations": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "windows": {
+        "installMode": "passive"
+      },
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDMzNjkzOTdDNjBDMTI3NjMKUldSako4RmdmRGxwTTFsejJCVmJjeDUzcDFVSlM5WkNnRWJVLzdBTjNLL3drN2NsSUJzTWhqQjUK",
+      "endpoints": [
+        "https://github.com/0xSovereign/BetterSteamAutoCracker/releases/latest/download/latest.json"
+      ]
+    }
+  }
+}
