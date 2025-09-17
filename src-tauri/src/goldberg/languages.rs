@@ -23,10 +23,7 @@ pub async fn fetch_and_write_languages(
     app_id: &str,
     steam_settings_dir: &Path,
 ) -> Result<(), String> {
-    info!(
-        "Fetching supported languages for AppID: {}",
-        app_id
-    );
+    info!("Fetching supported languages for AppID: {}", app_id);
 
     let url = format!("https://api.steamcmd.net/v1/info/{}", app_id);
     info!("Requesting URL: {}", url);

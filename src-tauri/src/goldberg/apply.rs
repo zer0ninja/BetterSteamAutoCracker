@@ -30,7 +30,10 @@ fn copy_with_retry(src: &Path, dst: &Path, max_retries: u32) -> Result<(), Strin
                 if attempt == max_retries {
                     return Err(format!(
                         "Failed to copy {} to {} after {} retries: {}",
-                        src.display(), dst.display(), max_retries + 1, e
+                        src.display(),
+                        dst.display(),
+                        max_retries + 1,
+                        e
                     ));
                 }
                 info!(

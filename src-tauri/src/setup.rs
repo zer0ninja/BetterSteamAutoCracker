@@ -12,9 +12,9 @@ use std::io;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::Semaphore;
 use tokio::task::{self, spawn_blocking};
-use tokio::io::AsyncWriteExt;
 use zip::read::ZipArchive;
 
 const GOLDBERG32_PATH: &str = "gameboun/x32/steam_api.dll";
@@ -53,7 +53,10 @@ async fn download_file(
         .acquire()
         .await
         .map_err(|e| SetupError::Other(format!("Semaphore error: {}", e)))?;
-    app_handle.emit("setup-progress", format!("Downloading: {}", file.target_path))?;
+    app_handle.emit(
+        "setup-progress",
+        format!("Downloading: {}", file.target_path),
+    )?;
 
     let response = client
         .get(&file.url)
@@ -74,7 +77,10 @@ async fn download_file(
     Ok(())
 }
 
-async fn extract_steamless_zip(cache_dir: &str, app_handle: &tauri::AppHandle) -> Result<(), SetupError> {
+async fn extract_steamless_zip(
+    cache_dir: &str,
+    app_handle: &tauri::AppHandle,
+) -> Result<(), SetupError> {
     let zip_path = format!("{}/{}", cache_dir, "Steamless.v3.1.0.5.-.by.atom0s.zip");
     let extract_dir = format!("{}/{}", cache_dir, STEAMLESS_DIR_NAME);
 
@@ -96,9 +102,9 @@ async fn extract_steamless_zip(cache_dir: &str, app_handle: &tauri::AppHandle) -
 
         for i in 0..archive.len() {
             let mut file = archive.by_index(i)?;
-            let file_path = file
-                .enclosed_name()
-                .ok_or_else(|| SetupError::Other(format!("Invalid file path in ZIP entry {}", i)))?;
+            let file_path = file.enclosed_name().ok_or_else(|| {
+                SetupError::Other(format!("Invalid file path in ZIP entry {}", i))
+            })?;
             let target_path = Path::new(&extract_dir_clone).join(file_path);
 
             if file.is_dir() {
@@ -123,7 +129,9 @@ async fn extract_steamless_zip(cache_dir: &str, app_handle: &tauri::AppHandle) -
 
 pub async fn setup(app_handle: tauri::AppHandle) -> Result<(), SetupError> {
     let cache_dir = data_dir()
-        .ok_or(SetupError::Other("Failed to get app data directory".to_string()))?
+        .ok_or(SetupError::Other(
+            "Failed to get app data directory".to_string(),
+        ))?
         .join(FOLDER)
         .to_string_lossy()
         .into_owned();

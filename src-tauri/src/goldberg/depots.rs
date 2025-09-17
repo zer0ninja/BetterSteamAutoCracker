@@ -1,4 +1,4 @@
-//! Known issue: 
+//! Known issue:
 //! It includes `branch` names instead of just numeric IDs for depots,
 //! which may or may not work properly, fixing when I can.
 
@@ -23,10 +23,7 @@ struct SteamCmdResponse {
 }
 
 pub async fn fetch_and_write_depots(app_id: &str, steam_settings_dir: &Path) -> Result<(), String> {
-    info!(
-        "Fetching depots for AppID: {}",
-        app_id
-    );
+    info!("Fetching depots for AppID: {}", app_id);
 
     // Fetch depot data from steamcmd.net API.
     let url = format!("https://api.steamcmd.net/v1/info/{}", app_id);

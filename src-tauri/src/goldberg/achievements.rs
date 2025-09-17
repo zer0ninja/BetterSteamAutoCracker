@@ -47,7 +47,7 @@ struct SteamGame {
 #[derive(Debug, Deserialize)]
 struct AvailableGameStats {
     achievements: Vec<SteamAchievement>,
-    stats: Vec<SteamStat>,
+    stats: Option<Vec<SteamStat>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -94,7 +94,12 @@ pub async fn fetch_achievements(
         "Fetching achievements for AppID: {} at URL: {}",
         app_id, url
     );
-    app_handle.emit("crack-progress", &json!({"progress": 50, "message": format!("Fetching achievements for AppID: {}", app_id)})).map_err(|e| format!("Failed to emit progress: {}", e))?;
+    app_handle
+        .emit(
+            "crack-progress",
+            &json!({"progress": 50, "message": format!("Fetching achievements for AppID: {}", app_id)}),
+        )
+        .map_err(|e| format!("Failed to emit progress: {}", e))?;
 
     let response = client
         .get(&url)
@@ -114,12 +119,8 @@ pub async fn fetch_achievements(
         .await
         .map_err(|e| format!("Failed to read response body: {}", e))?;
 
-    let schema: SteamGameSchema = serde_json::from_str(&body).map_err(|e| {
-        format!(
-            "Failed to parse Steam API response: {}",
-            e
-        )
-    })?;
+    let schema: SteamGameSchema = serde_json::from_str(&body)
+        .map_err(|e| format!("Failed to parse Steam API response: {}", e))?;
 
     let (achievements, stats) = if let Some(game) = schema.game {
         if let Some(stats_data) = game.available_game_stats {
@@ -146,6 +147,7 @@ pub async fn fetch_achievements(
 
             let stats: Vec<Stat> = stats_data
                 .stats
+                .unwrap_or_default()
                 .into_iter()
                 .map(|stat| {
                     info!(
@@ -173,14 +175,23 @@ pub async fn fetch_achievements(
 
     let total_items =
         achievements.len() as f32 + stats.len() as f32 + (achievements.len() as f32 * 2.0); // Each achievement has icon and icon_gray
-    let progress_per_item = (3.0 * dll_step / substeps_per_dll) / total_items;
+    let progress_per_item = if total_items > 0.0 {
+        (3.0 * dll_step / substeps_per_dll) / total_items
+    } else {
+        0.0
+    };
     let mut current_subprogress = 0.0;
 
     // Save achievements.json
     let achievements_path = steam_settings_dir.join("achievements.json");
     for ach in achievements.iter() {
         current_subprogress += progress_per_item;
-        app_handle.emit("crack-progress", &json!({"progress": (50.0 + current_subprogress) as u32, "message": format!("Processing achievement: {}", ach.display_name)})).map_err(|e| format!("Failed to emit progress: {}", e))?;
+        app_handle
+            .emit(
+                "crack-progress",
+                &json!({"progress": (50.0 + current_subprogress) as u32, "message": format!("Processig achievement: {}", ach.display_name)}),
+            )
+            .map_err(|e| format!("Failed to emit progress: {}", e))?;
     }
     let achievements_json = serde_json::to_string_pretty(&achievements)
         .map_err(|e| format!("Failed to serialize achievements.json: {}", e))?;
@@ -197,14 +208,15 @@ pub async fn fetch_achievements(
         .map_err(|e| format!("Failed to sync achievements.json: {}", e))?;
     info!("Saved achievements to: {}", achievements_path.display());
     current_subprogress += progress_per_item;
-    app_handle.emit("crack-progress", &json!({"progress": (50.0 + current_subprogress) as u32, "message": "Saved achievements.json"})).map_err(|e| format!("Failed to emit progress: {}", e))?;
+    app_handle
+        .emit(
+            "crack-progress",
+            &json!({"progress": (50.0 + current_subprogress) as u32, "message": "Saved achievements.json"}),
+        )
+        .map_err(|e| format!("Failed to emit progress: {}", e))?;
 
-    // Save stats.json
+    // Save stats.json (empty if no stats {fixed issue where it didnt continue the crack})
     let stats_path = steam_settings_dir.join("stats.json");
-    for stat in stats.iter() {
-        current_subprogress += progress_per_item;
-        app_handle.emit("crack-progress", &json!({"progress": (50.0 + current_subprogress) as u32, "message": format!("Processing stat: {}", stat.name)})).map_err(|e| format!("Failed to emit progress: {}", e))?;
-    }
     let stats_json = serde_json::to_string_pretty(&stats)
         .map_err(|e| format!("Failed to serialize stats.json: {}", e))?;
     let mut file = File::create(&stats_path).map_err(|e| {
@@ -218,9 +230,18 @@ pub async fn fetch_achievements(
         .map_err(|e| format!("Failed to write stats.json: {}", e))?;
     file.sync_all()
         .map_err(|e| format!("Failed to sync stats.json: {}", e))?;
-    info!("Saved stats to: {}", stats_path.display());
+    info!(
+        "Saved stats to: {} ({} stats)",
+        stats_path.display(),
+        stats.len()
+    );
     current_subprogress += progress_per_item;
-    app_handle.emit("crack-progress", &json!({"progress": (50.0 + current_subprogress) as u32, "message": "Saved stats.json"})).map_err(|e| format!("Failed to emit progress: {}", e))?;
+    app_handle
+        .emit(
+            "crack-progress",
+            &json!({"progress": (50.0 + current_subprogress) as u32, "message": format!("Saved stats.json ({} stats)", stats.len())}),
+        )
+        .map_err(|e| format!("Failed to emit progress: {}", e))?;
 
     // Download achievement icons
     let images_dir = steam_settings_dir.join("images");
@@ -232,7 +253,12 @@ pub async fn fetch_achievements(
         )
     })?;
     current_subprogress += progress_per_item;
-    app_handle.emit("crack-progress", &json!({"progress": (50.0 + current_subprogress) as u32, "message": "Created images directory"})).map_err(|e| format!("Failed to emit progress: {}", e))?;
+    app_handle
+        .emit(
+            "crack-progress",
+            &json!({"progress": (50.0 + current_subprogress) as u32, "message": "Created images directory"}),
+        )
+        .map_err(|e| format!("Failed to emit progress: {}", e))?;
 
     for ach in &achievements {
         for (original_url, field_name) in &[(&ach.icon, "icon"), (&ach.icon_gray, "icon_gray")] {
@@ -243,7 +269,12 @@ pub async fn fetch_achievements(
                     "Downloading {}: {} for '{}'",
                     field_name, original_url, ach.name
                 );
-                app_handle.emit("crack-progress", &json!({"progress": (50.0 + current_subprogress) as u32, "message": format!("Downloading {} for achievement: {}", field_name, ach.display_name)})).map_err(|e| format!("Failed to emit progress: {}", e))?;
+                app_handle
+                    .emit(
+                        "crack-progress",
+                        &json!({"progress": (50.0 + current_subprogress) as u32, "message": format!("Downloading {} for achievement: {}", field_name, ach.display_name)}),
+                    )
+                    .map_err(|e| format!("Failed to emit progress: {}", e))?;
                 let response = client.get(*original_url).send().await.map_err(|e| {
                     format!(
                         "Failed to download {} {} for '{}': {}",
@@ -302,7 +333,12 @@ pub async fn fetch_achievements(
                     ach.name
                 );
                 current_subprogress += progress_per_item;
-                app_handle.emit("crack-progress", &json!({"progress": (50.0 + current_subprogress) as u32, "message": format!("Downloaded {} for achievement: {}", field_name, ach.display_name)})).map_err(|e| format!("Failed to emit progress: {}", e))?;
+                app_handle
+                    .emit(
+                        "crack-progress",
+                        &json!({"progress": (50.0 + current_subprogress) as u32, "message": format!("Downloaded {} for achievement: {}", field_name, ach.display_name)}),
+                    )
+                    .map_err(|e| format!("Failed to emit progress: {}", e))?;
             }
         }
     }

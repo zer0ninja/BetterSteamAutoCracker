@@ -84,10 +84,7 @@ pub async fn fetch_and_write_dlcs(app_id: &str, steam_settings_dir: &Path) -> Re
     }
 
     if dlc_count == 0 {
-        info!(
-            "No DLCs found for AppID {}.",
-            app_id
-        );
+        info!("No DLCs found for AppID {}.", app_id);
     } else {
         info!("Fetched {} DLCs for AppID {}", dlc_count, app_id);
     }

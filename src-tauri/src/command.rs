@@ -1,9 +1,26 @@
-
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tauri::{command, AppHandle, Emitter};
 
 use crate::goldberg::apply::apply_goldberg;
 use crate::steamless::apply::apply_steamless;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SteamAppDetails {
+    #[serde(flatten)]
+    data: std::collections::HashMap<String, AppDetail>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AppDetail {
+    success: bool,
+    data: Option<AppData>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AppData {
+    drm_notice: Option<String>,
+}
 
 #[cfg(target_os = "windows")]
 use winapi::um::winuser::MessageBeep;
@@ -19,7 +36,6 @@ fn play_system_beep() {
         // No-op on non-Windows platforms
     }
 }
-
 
 #[command]
 pub async fn cmd_apply_crack(
@@ -60,4 +76,50 @@ pub async fn cmd_apply_crack(
     play_system_beep();
 
     Ok(format!("{}\n{}", steamless_result, goldberg_result))
+}
+
+#[command]
+pub async fn cmd_check_drm(app_id: String) -> Result<String, String> {
+    let url = format!(
+        "https://store.steampowered.com/api/appdetails?appids={}&l=english",
+        app_id
+    );
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch Steam API: {}", e))?;
+
+    let data: SteamAppDetails = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
+    let app_detail = data
+        .data
+        .get(&app_id)
+        .ok_or_else(|| format!("No data for App ID {}", app_id))?;
+
+    if !app_detail.success || app_detail.data.is_none() {
+        return Ok("No DRM information available".to_string());
+    }
+
+    let drm_notice = app_detail
+        .data
+        .as_ref()
+        .and_then(|data| data.drm_notice.as_ref());
+
+    match drm_notice {
+        Some(notice) => {
+            let has_denuvo = notice.to_lowercase().contains("denuvo");
+            Ok(if has_denuvo {
+                format!("App ID {} uses Denuvo DRM", app_id)
+            } else {
+                format!("App ID {} has DRM notice: {}", app_id, notice)
+            })
+        }
+        None => Ok(format!("App ID {} has no DRM notice", app_id)),
+    }
 }
