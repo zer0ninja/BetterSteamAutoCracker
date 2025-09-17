@@ -12,9 +12,20 @@ export default function App() {
   const [selectedFolder, setSelectedFolder] = useState<string>("");
   const [appId, setAppId] = useState<string>("");
 
+  const [isDark, setIsDark] = useState(false);
+
+  const toggleTheme = () => {
+    setIsDark((prev) => !prev);
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col custom-scrollbar fade-scrollbar">
-      <CustomTitlebar onViewChange={setViewMode} currentView={viewMode} />
+    <div className={`min-h-screen bg-background flex flex-col custom-scrollbar fade-scrollbar ${isDark ? "dark" : ""}`}>
+      <CustomTitlebar
+        onViewChange={setViewMode}
+        currentView={viewMode}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+      />
 
       <div className="flex-1 pt-14 flex items-center justify-center p-8">
         {viewMode === "main" && (
