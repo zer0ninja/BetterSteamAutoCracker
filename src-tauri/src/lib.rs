@@ -6,9 +6,11 @@ pub mod config;
 pub mod error;
 pub mod goldberg;
 pub mod setup;
+pub mod theme;
 pub mod steamless;
 
 use crate::command::{cmd_apply_crack, cmd_check_drm};
+use crate::theme::get_windows_theme;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -20,7 +22,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(generate_handler![cmd_apply_crack, cmd_check_drm])
+        .invoke_handler(generate_handler![
+            cmd_apply_crack,
+            cmd_check_drm,
+            get_windows_theme
+        ])
         .setup(|app| {
             let app_handle = app.handle().clone();
             async_runtime::spawn(async move {
