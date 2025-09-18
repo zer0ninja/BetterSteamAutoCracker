@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { CustomTitlebar } from "@/components/titlebar";
 import { MainInterface } from "@/components/interfaces/main";
 import { CreditsInterface } from "@/components/interfaces/credits";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 type ViewMode = "main" | "credits";
 
@@ -15,13 +15,15 @@ export default function App() {
 
   const [isDark, setIsDark] = useState(false);
 
-useEffect(() => {
-  invoke("get_windows_theme").then((theme: string) => {
-    setIsDark(theme === "dark");
-  }).catch(() => {
-    setIsDark(false);
-  });
-}, []);
+  useEffect(() => {
+    invoke<string>("get_windows_theme")
+      .then((theme) => {
+        setIsDark(theme === "dark");
+      })
+      .catch(() => {
+        setIsDark(false);
+      });
+  }, []);
 
   const toggleTheme = () => {
     setIsDark((prev) => !prev);
