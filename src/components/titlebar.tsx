@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import {
   X,
   Minimize,
-  Home,
+  Users,
   Sun,
   Moon,
 } from "lucide-react";
@@ -58,7 +58,7 @@ export function CustomTitlebar({
           }`}
           aria-label="Toggle View"
         >
-          <Home
+          <Users
             className={`h-4 w-4 ${
               currentView === "credits"
                 ? "text-primary-foreground"
