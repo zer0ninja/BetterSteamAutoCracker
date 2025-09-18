@@ -2,13 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getVersion } from "@tauri-apps/api/app";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import {
-  X,
-  Minimize,
-  Users,
-  Sun,
-  Moon,
-} from "lucide-react";
+import { X, Minimize, Users, Sun, Moon } from "lucide-react";
 
 type ViewMode = "main" | "credits";
 
@@ -51,27 +45,18 @@ export function CustomTitlebar({
           onClick={() =>
             onViewChange(currentView === "credits" ? "main" : "credits")
           }
-          className={`h-8 w-8 p-0 hover:bg-muted/50 transition-colors duration-200 ${
-            currentView === "credits"
-              ? "hover:bg-primary/90 hover:text-primary-foreground"
-              : "bg-transparent"
-          }`}
+          className="h-8 w-8 p-0 hover:bg-muted/50 transition-colors duration-200"
           aria-label="Toggle View"
         >
-          <Users
-            className={`h-4 w-4 ${
-              currentView === "credits"
-                ? "text-primary-foreground"
-                : "text-primary"
-            }`}
-          />
+          <Users className={`h-4 w-4 text-gray-600 dark:text-gray-300`} />
         </Button>
+        <div style={{ width: "72px" }} />{" "}
       </div>
 
       <div className="flex-1 flex justify-center">
         <button
           onClick={() => onViewChange("main")}
-          className="titlebar-no-drag group relative"
+          className="group relative"
           aria-label="Title"
         >
           <h1 className="text-xl font-bold text-foreground select-none tracking-tight transition-colors duration-200 px-4 py-1 rounded-md">
@@ -83,18 +68,18 @@ export function CustomTitlebar({
         </button>
       </div>
 
-      <div className="titlebar-no-drag flex items-center gap-4">
+      <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
           onClick={onToggleTheme}
-          aria-label="Toggle Dark Mode"
-          className="h-8 w-8 p-0 rounded transition-colors duration-200"
+          aria-label="Toggle Theme"
+          className="h-8 w-8 p-0 hover:bg-muted/50 transition-colors duration-200"
         >
           {isDark ? (
-            <Sun className="h-5 w-5 text-white" />
+            <Sun className="h-5 w-5 text-foreground" />
           ) : (
-            <Moon className="h-5 w-5 text-black" />
+            <Moon className="h-5 w-5 text-foreground" />
           )}
         </Button>
 
@@ -111,11 +96,11 @@ export function CustomTitlebar({
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 hover:bg-red-500 hover:text-white transition-colors duration-200"
+          className="h-8 w-8 p-0 hover:bg-muted/50 transition-colors duration-200"
           onClick={handleClose}
           aria-label="Close"
         >
-          <X className="h-4 w-4 text-gray-600 dark:text-gray-300 group-hover:text-white" />
+          <X className="h-4 w-4 text-gray-600 dark:text-gray-300" />
         </Button>
       </div>
     </div>

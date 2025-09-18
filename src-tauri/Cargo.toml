@@ -1,6 +1,6 @@
 [package]
 name = "better-steam-autocracker"
-version = "0.1.2"
+version = "0.1.3"
 description = "An improved version of Steam Auto Cracker with a lot of enhancements and a beautiful UI."
 authors = ["Sovereign"]
 edition = "2021"
@@ -16,7 +16,7 @@ tauri-build = { version = "2", features = [] }
 # Windows
 windows = { version = "0.62.0", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
 winreg = "0.55.0"
-winapi = { version = "0.3.9", features = ["winuser"] }
+winapi = { version = "0.3.9", features = ["winuser", "winreg", "handleapi", "synchapi", "winbase", "winnt"] }
 
 # Tauri
 tauri = { version = "2", features = [] }

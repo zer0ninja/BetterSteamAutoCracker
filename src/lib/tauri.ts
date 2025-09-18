@@ -2,6 +2,42 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 
 /**
+ * Interface representing the application settings.
+ */
+export interface Settings {
+  theme: "light" | "dark";
+}
+
+/**
+ * Retrieves the current settings.
+ * @returns A promise that resolves to the current settings.
+ * @throws An error if the settings retrieval fails.
+ */
+export async function getAppSettings(): Promise<Settings> {
+  try {
+    const settings = await invoke<Settings>("cmd_get_settings");
+    return settings;
+  } catch (error) {
+    console.error("Error loading settings:", error);
+    throw new Error(`Failed to load settings: ${error}`);
+  }
+}
+
+/**
+ * Sets the settings and persists them.
+ * @param settings The new settings to apply.
+ * @throws An error if the settings update fails.
+ */
+export async function setAppSettings(settings: Settings): Promise<void> {
+  try {
+    await invoke("cmd_set_settings", { newSettings: settings });
+  } catch (error) {
+    console.error("Error setting settings:", error);
+    throw new Error(`Failed to set settings: ${error}`);
+  }
+}
+
+/**
  * Opens a directory selection dialog and returns the selected directory path.
  * @returns A promise that resolves to the selected directory path as a string, or null if no directory is selected.
  * @throws An error if the dialog operation fails.

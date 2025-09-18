@@ -1,9 +1,14 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tauri::{command, AppHandle, Emitter};
+use tauri::{command, AppHandle, Emitter, State};
+use std::fs;
+use std::path::PathBuf;
+use std::sync::Mutex;
+use dirs::data_dir;
 
 use crate::goldberg::apply::apply_goldberg;
 use crate::steamless::apply::apply_steamless;
+use crate::settings::{Settings, Theme};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SteamAppDetails {
@@ -30,10 +35,6 @@ fn play_system_beep() {
     #[cfg(target_os = "windows")]
     unsafe {
         MessageBeep(0xFFFFFFFF);
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        // No-op on non-Windows platforms
     }
 }
 
@@ -122,4 +123,47 @@ pub async fn cmd_check_drm(app_id: String) -> Result<String, String> {
         }
         None => Ok(format!("App ID {} has no DRM notice", app_id)),
     }
+}
+
+#[cfg(target_os = "windows")]
+#[command]
+pub fn cmd_get_windows_theme() -> Result<String, String> {
+    use crate::settings::get_system_theme;
+    Ok(match get_system_theme() {
+        Theme::Light => "light".to_string(),
+        Theme::Dark => "dark".to_string(),
+    })
+}
+
+#[command]
+pub fn cmd_get_settings(state: State<Mutex<Settings>>) -> Result<Settings, String> {
+    let settings = state
+        .lock()
+        .map_err(|e| format!("Failed to lock settings: {}", e))?;
+    Ok(settings.clone())
+}
+
+#[command]
+pub fn cmd_set_settings(state: State<Mutex<Settings>>, new_settings: Settings) -> Result<(), String> {
+    let mut settings = state
+        .lock()
+        .map_err(|e| format!("Failed to lock settings: {}", e))?;
+
+    *settings = new_settings;
+
+    let settings_path = data_dir()
+        .map(|dir| dir.join("sovereign.bsac.app").join("settings").join("theme.json"))
+        .unwrap_or_else(|| PathBuf::from("settings.json"));
+
+    if let Some(parent) = settings_path.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("Failed to create directory {}: {}", parent.display(), e))?;
+    }
+
+    fs::write(
+        &settings_path,
+        serde_json::to_string(&*settings).map_err(|e| format!("Failed to serialize settings: {}", e))?,
+    )
+    .map_err(|e| format!("Failed to save settings to {}: {}", settings_path.display(), e))?;
+    Ok(())
 }

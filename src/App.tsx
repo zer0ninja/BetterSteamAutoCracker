@@ -1,10 +1,8 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { CustomTitlebar } from "@/components/titlebar";
 import { MainInterface } from "@/components/interfaces/main";
 import { CreditsInterface } from "@/components/interfaces/credits";
-import { invoke } from "@tauri-apps/api/core";
+import { getAppSettings, setAppSettings } from "./lib/tauri";
 
 type ViewMode = "main" | "credits";
 
@@ -12,29 +10,56 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>("main");
   const [selectedFolder, setSelectedFolder] = useState<string>("");
   const [appId, setAppId] = useState<string>("");
-
-  const [isDark, setIsDark] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [isThemeLoaded, setIsThemeLoaded] = useState<boolean>(false);
 
   useEffect(() => {
-    invoke<string>("get_windows_theme")
-      .then((theme) => {
-        setIsDark(theme === "dark");
+    document.documentElement.className =
+      "min-h-screen bg-background flex flex-col custom-scrollbar fade-scrollbar";
+
+    getAppSettings()
+      .then((settings) => {
+        setTheme(settings.theme);
+        applyTheme(settings.theme);
+        setIsThemeLoaded(true);
       })
       .catch(() => {
-        setIsDark(false);
+        console.error("Failed to load settings");
+        setTheme("light");
+        applyTheme("light");
+        setIsThemeLoaded(true);
       });
   }, []);
 
-  const toggleTheme = () => {
-    setIsDark((prev) => !prev);
+  const applyTheme = (theme: "light" | "dark") => {
+    document.documentElement.className = `min-h-screen bg-background flex flex-col custom-scrollbar fade-scrollbar ${
+      theme === "dark" ? "dark" : ""
+    }`;
   };
 
+  const toggleTheme = async () => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    try {
+      await setAppSettings({ theme: nextTheme });
+      setTheme(nextTheme);
+      applyTheme(nextTheme);
+    } catch (error) {
+      console.error("Failed to toggle theme:", error);
+    }
+  };
+
+  // This is a quick fix to prevent flashing of unstyled content
+  // while the theme is being loaded from the backend.
+  if (!isThemeLoaded) {
+    return null;
+  }
+
   return (
-    <div className={`min-h-screen bg-background flex flex-col custom-scrollbar fade-scrollbar ${isDark ? "dark" : ""}`}>
+    <div key={theme} className={document.documentElement.className}>
       <CustomTitlebar
         onViewChange={setViewMode}
         currentView={viewMode}
-        isDark={isDark}
+        isDark={theme === "dark"}
         onToggleTheme={toggleTheme}
       />
       <div className="flex-1 pt-14 flex items-center justify-center p-8">
