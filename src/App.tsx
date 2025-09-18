@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CustomTitlebar } from "@/components/titlebar";
 import { MainInterface } from "@/components/interfaces/main";
 import { CreditsInterface } from "@/components/interfaces/credits";
+import { invoke } from "@tauri-apps/api/tauri";
 
 type ViewMode = "main" | "credits";
 
@@ -13,6 +14,14 @@ export default function App() {
   const [appId, setAppId] = useState<string>("");
 
   const [isDark, setIsDark] = useState(false);
+
+useEffect(() => {
+  invoke("get_windows_theme").then((theme: string) => {
+    setIsDark(theme === "dark");
+  }).catch(() => {
+    setIsDark(false);
+  });
+}, []);
 
   const toggleTheme = () => {
     setIsDark((prev) => !prev);
@@ -26,7 +35,6 @@ export default function App() {
         isDark={isDark}
         onToggleTheme={toggleTheme}
       />
-
       <div className="flex-1 pt-14 flex items-center justify-center p-8">
         {viewMode === "main" && (
           <MainInterface
