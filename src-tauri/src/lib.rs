@@ -1,16 +1,18 @@
 use env_logger;
-use tauri::{async_runtime, generate_context, generate_handler, Builder, Emitter};
 use std::sync::Mutex;
+use tauri::{async_runtime, generate_context, generate_handler, Builder, Emitter};
 
 pub mod command;
 pub mod config;
 pub mod error;
 pub mod goldberg;
+pub mod settings;
 pub mod setup;
 pub mod steamless;
-pub mod settings;
 
-use crate::command::{cmd_get_settings, cmd_set_settings, cmd_apply_crack, cmd_check_drm, cmd_get_windows_theme};
+use crate::command::{
+    cmd_apply_crack, cmd_check_drm, cmd_get_settings, cmd_get_windows_theme, cmd_set_settings,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

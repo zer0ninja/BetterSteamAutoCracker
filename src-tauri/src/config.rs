@@ -12,7 +12,8 @@ pub const S3: &str = "https://s3.lillianne.solutions/";
 // Important: When creating a fork, do not modify this constant without
 // explicit permission from "0xSovereign" to avoid breaking attribution.
 pub const GITHUB: &str = "https://github.com/0xSovereign/BetterSteamAutoCracker";
-pub const GITHUB_API: &str = "https://api.github.com/repos/0xSovereign/BetterSteamAutoCracker/releases/latest"; // For update checks.
+pub const GITHUB_API: &str =
+    "https://api.github.com/repos/0xSovereign/BetterSteamAutoCracker/releases/latest"; // For update checks.
 
 // Current application version, automatically set from Cargo.toml during build.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -1,7 +1,7 @@
+use dirs::data_dir;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
-use dirs::data_dir;
 use winreg::enums::*;
 use winreg::RegKey;
 
@@ -32,7 +32,13 @@ pub fn get_system_theme() -> Theme {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     match hkcu.open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize") {
         Ok(personalize) => match personalize.get_value::<u32, _>("AppsUseLightTheme") {
-            Ok(theme) => if theme == 0 { Theme::Dark } else { Theme::Light },
+            Ok(theme) => {
+                if theme == 0 {
+                    Theme::Dark
+                } else {
+                    Theme::Light
+                }
+            }
             Err(e) => {
                 eprintln!("Failed to get AppsUseLightTheme: {}", e);
                 Theme::Light
@@ -62,7 +68,11 @@ pub fn load_settings() -> Settings {
                 }
             },
             Err(e) => {
-                eprintln!("Failed to read settings from {}: {}, using system theme", settings_path.display(), e);
+                eprintln!(
+                    "Failed to read settings from {}: {}, using system theme",
+                    settings_path.display(),
+                    e
+                );
                 Settings {
                     theme: get_system_theme(),
                 }

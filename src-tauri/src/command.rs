@@ -1,14 +1,14 @@
+use dirs::data_dir;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tauri::{command, AppHandle, Emitter, State};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use dirs::data_dir;
+use tauri::{command, AppHandle, Emitter, State};
 
 use crate::goldberg::apply::apply_goldberg;
-use crate::steamless::apply::apply_steamless;
 use crate::settings::{Settings, Theme};
+use crate::steamless::apply::apply_steamless;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SteamAppDetails {
@@ -144,7 +144,10 @@ pub fn cmd_get_settings(state: State<Mutex<Settings>>) -> Result<Settings, Strin
 }
 
 #[command]
-pub fn cmd_set_settings(state: State<Mutex<Settings>>, new_settings: Settings) -> Result<(), String> {
+pub fn cmd_set_settings(
+    state: State<Mutex<Settings>>,
+    new_settings: Settings,
+) -> Result<(), String> {
     let mut settings = state
         .lock()
         .map_err(|e| format!("Failed to lock settings: {}", e))?;
@@ -152,7 +155,11 @@ pub fn cmd_set_settings(state: State<Mutex<Settings>>, new_settings: Settings) -
     *settings = new_settings;
 
     let settings_path = data_dir()
-        .map(|dir| dir.join("sovereign.bsac.app").join("settings").join("theme.json"))
+        .map(|dir| {
+            dir.join("sovereign.bsac.app")
+                .join("settings")
+                .join("theme.json")
+        })
         .unwrap_or_else(|| PathBuf::from("settings.json"));
 
     if let Some(parent) = settings_path.parent() {
@@ -162,8 +169,15 @@ pub fn cmd_set_settings(state: State<Mutex<Settings>>, new_settings: Settings) -
 
     fs::write(
         &settings_path,
-        serde_json::to_string(&*settings).map_err(|e| format!("Failed to serialize settings: {}", e))?,
+        serde_json::to_string(&*settings)
+            .map_err(|e| format!("Failed to serialize settings: {}", e))?,
     )
-    .map_err(|e| format!("Failed to save settings to {}: {}", settings_path.display(), e))?;
+    .map_err(|e| {
+        format!(
+            "Failed to save settings to {}: {}",
+            settings_path.display(),
+            e
+        )
+    })?;
     Ok(())
 }
