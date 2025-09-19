@@ -10,11 +10,17 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { FolderOpen, AlertTriangle } from "lucide-react";
+import {
+  FolderOpen,
+  CheckCircle2Icon,
+  AlertTriangleIcon,
+  Loader2Icon,
+} from "lucide-react";
 import { selectDirectory, applyCrack } from "@/lib/tauri";
 import { checkForDRM } from "@/lib/checkForDRM";
 import { listen } from "@tauri-apps/api/event";
 import { SuccessToast } from "@/components/toast";
+import { cn } from "@/lib/utils";
 
 interface MainInterfaceProps {
   selectedFolder: string;
@@ -36,6 +42,7 @@ export function MainInterface({
   const [drmWarning, setDrmWarning] = useState<string>("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [isDrmChecking, setIsDrmChecking] = useState(false);
+  const [drmCheckAttempts, setDrmCheckAttempts] = useState(0);
 
   const handleFolderSelect = async () => {
     try {
@@ -88,35 +95,38 @@ export function MainInterface({
 
   useEffect(() => {
     const checkDRM = async () => {
-      if (!appId) {
-        setDrmWarning("");
+      if (!appId || drmCheckAttempts >= 3) {
         setIsDrmChecking(false);
         return;
       }
 
       setIsDrmChecking(true);
+      setDrmCheckAttempts((prev) => prev + 1);
+
       try {
-        const hasDenuvo = await checkForDRM(appId);
+        const hasDenuvo = await checkForDRM(appId, drmCheckAttempts);
         if (hasDenuvo) {
           setDrmWarning(
             "This game contains Denuvo Anti-Tamper, you'll have to first manually crack the game's executable and afterwards use the program, otherwise the game won't work."
           );
         } else {
-          // Pass through
+          setDrmWarning("No DRM detected.");
         }
       } catch (error) {
         console.error(
           `[${new Date().toISOString()}] Failed to check DRM for App ID ${appId}:`,
           error
         );
-        setDrmWarning("Failed to check DRM status.");
+        setDrmWarning(
+          `Failed to check DRM status. Attempt ${drmCheckAttempts} of 3.`
+        );
       } finally {
         setIsDrmChecking(false);
       }
     };
 
     checkDRM();
-  }, [appId]);
+  }, [appId, drmCheckAttempts]);
 
   const handleStart = async () => {
     if (
@@ -178,7 +188,7 @@ export function MainInterface({
               <Button
                 onClick={handleFolderSelect}
                 variant="outline"
-                className="flex items-center gap-2 h-12 px-6 bg-background border-border hover:bg-accent hover:border-primary transition-all duration-200 text-foreground"
+                className="cursor-pointer flex items-center gap-2 h-12 px-6 bg-background border-border hover:bg-accent hover:border-primary transition-all duration-200 text-foreground"
               >
                 <FolderOpen className="h-5 w-5" />
                 Browse
@@ -201,8 +211,21 @@ export function MainInterface({
               className="h-12 bg-background border-border text-base text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:ring-primary/20"
             />
             {drmWarning && (
-              <div className="flex items-center gap-2 p-3 bg-yellow-100/50 border border-yellow-500/50 rounded-md text-sm text-yellow-800">
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <div
+                className={cn(
+                  "flex items-center gap-2 p-3 rounded-md text-sm",
+                  drmWarning.includes("No DRM")
+                    ? "bg-primary/10 border-primary/20 text-primary"
+                    : "bg-destructive/10 border-destructive/20 text-destructive"
+                )}
+              >
+                {drmWarning.includes("No DRM") ? (
+                  <CheckCircle2Icon className={cn("h-5 w-5", "text-primary")} />
+                ) : (
+                  <AlertTriangleIcon
+                    className={cn("h-5 w-5", "text-destructive")}
+                  />
+                )}
                 <span>{drmWarning}</span>
               </div>
             )}
@@ -237,6 +260,9 @@ export function MainInterface({
               size="lg"
               id="crack-button"
             >
+              {isDrmChecking && (
+                <Loader2Icon className="h-5 w-5 animate-spin text-primary-foreground" />
+              )}
               Crack
             </Button>
           )}

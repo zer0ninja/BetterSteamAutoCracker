@@ -55,7 +55,7 @@ export default function App() {
   }
 
   return (
-    <div key={theme} className={document.documentElement.className}>
+    <div className={document.documentElement.className}>
       <CustomTitlebar
         onViewChange={setViewMode}
         currentView={viewMode}

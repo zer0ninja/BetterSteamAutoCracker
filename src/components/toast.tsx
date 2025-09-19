@@ -38,15 +38,20 @@ export const SuccessToast = ({
           : "opacity-0 translate-y-4 pointer-events-none"
       )}
     >
-      <div className="flex items-start gap-4 p-4 pr-6 rounded-lg bg-green-50 border border-green-200 shadow-xl w-[360px]">
-        <div className="mt-1 text-green-600">
+      <div
+        className={cn(
+          "flex items-start gap-4 p-4 pr-6 rounded-lg border shadow-xl w-[360px]",
+          "bg-primary/10 border-primary/20"
+        )}
+      >
+        <div className="mt-1 text-primary">
           <CheckCircle2Icon className="h-6 w-6" />
         </div>
         <div className="flex-1">
-          <AlertTitle className="text-base font-semibold text-green-800">
+          <AlertTitle className="text-base font-semibold text-primary-foreground">
             Success!
           </AlertTitle>
-          <AlertDescription className="mt-1 text-sm text-green-700 leading-snug">
+          <AlertDescription className="mt-1 text-sm text-primary-foreground/80 leading-snug">
             {message}
           </AlertDescription>
         </div>

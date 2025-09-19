@@ -61,7 +61,13 @@ export async function selectDirectory(): Promise<string | null> {
  * @returns A promise that resolves to the DRM status message from the backend.
  * @throws An error if the DRM check fails.
  */
-export async function checkDrm(appId: string): Promise<string> {
+export async function checkDrm(
+  appId: string,
+  attempt: number = 1
+): Promise<string> {
+  if (attempt > 3) {
+    throw new Error("Maximum DRM check attempts reached.");
+  }
   try {
     const result = await invoke<string>("cmd_check_drm", { appId });
     return result;

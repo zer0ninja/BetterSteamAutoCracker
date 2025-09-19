@@ -4,8 +4,8 @@
   "author": {
     "name": "Sovereign"
   },
-  "description": "An application to auto crack games that have no DRM.",
-  "version": "0.1.3",
+  "description": "An improved version of Steam Auto Cracker with a lot of enhancements and with a beautiful user interface.",
+  "version": "0.1.4",
   "type": "module",
   "scripts": {
     "dev": "vite",

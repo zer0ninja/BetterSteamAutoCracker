@@ -20,7 +20,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // Steam Web API key for getting achievements.
 // Get the key key from: https://steamcommunity.com/dev/apikey
-pub const STEAM_API_KEY: &str = ""; // Needed
+pub const STEAM_API_KEY: &str = "8C06E74A525F61440A9D38C508C83923"; // Needed
 
 // Application folder name for storing cache data.
 pub const FOLDER: &str = "sovereign.bsac.app"; // It has to match tauri.conf.json's identifier.
