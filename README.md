@@ -29,11 +29,11 @@ Provided "as is" without warranty. Developers are not liable for damages or lega
 
 | Overview (Light)                                       | Overview (Dark)                                      |
 | ------------------------------------------------------ | ---------------------------------------------------- |
-| ![Overview Light](docs\screenshots\overview-light.png) | ![Overview Dark](docs\screenshots\overview-dark.png) |
+| ![Overview Light](docs/screenshots/overview-light.png) | ![Overview Dark](docs/screenshots/overview-dark.png) |
 
 | Check (Light)                                    | Check (Dark)                                   |
 | ------------------------------------------------ | ---------------------------------------------- |
-| ![Check Light](docs\screenshots\check-light.png) | ![Check Dark](docs\screenshots\check-dark.png) |
+| ![Check Light](docs/screenshots/check-light.png) | ![Check Dark](docs/screenshots/check-dark.png) |
 
 ---
 
