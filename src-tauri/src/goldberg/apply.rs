@@ -50,6 +50,39 @@ fn copy_with_retry(src: &Path, dst: &Path, max_retries: u32) -> Result<(), Strin
     Ok(())
 }
 
+fn remove_with_retry(path: &Path, max_retries: u32) -> Result<(), String> {
+    for attempt in 0..=max_retries {
+        match fs::remove_file(path) {
+            Ok(_) => {
+                info!(
+                    "Removed {} on attempt {}",
+                    path.display(),
+                    attempt + 1
+                );
+                return Ok(());
+            }
+            Err(e) => {
+                if attempt == max_retries {
+                    return Err(format!(
+                        "Failed to remove {} after {} retries: {}",
+                        path.display(),
+                        max_retries + 1,
+                        e
+                    ));
+                }
+                info!(
+                    "Remove attempt {} failed for {}: {}. Retrying in 1s",
+                    attempt + 1,
+                    path.display(),
+                    e
+                );
+                thread::sleep(Duration::from_secs(1));
+            }
+        }
+    }
+    Ok(())
+}
+
 pub async fn apply_goldberg(
     app_handle: AppHandle,
     game_location: String,
@@ -220,55 +253,62 @@ pub async fn apply_goldberg(
         current_progress += substep;
         app_handle.emit("crack-progress", &json!({"progress": current_progress as u32, "message": "Created backup directory"})).map_err(|e| format!("Failed to emit progress: {}", e))?;
 
-        // Creae .svrn backup in dll_dir if original exists and is not already Goldberg
+        // Create .svrn backup in dll_dir if original exists and is not already Goldberg
+        let base_name = dll_path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+        let svrn_path = dll_dir.join(format!("{}.svrn", base_name));
+
         if target_dll_path.exists() {
-            if let (Ok(meta_target), Ok(meta_source)) = (
+            let should_replace = match (
                 fs::metadata(&target_dll_path),
                 fs::metadata(&source_dll_path),
             ) {
-                if meta_target.len() != meta_source.len() {
-                    let svrn_path = dll_dir.join(format!(
-                        "{}.svrn",
-                        dll_name.strip_suffix(".dll").unwrap_or(dll_name)
-                    ));
-                    if svrn_path.exists() {
-                        fs::remove_file(&svrn_path).ok();
-                    }
-                    copy_with_retry(&target_dll_path, &svrn_path, 5)?;
-                    info!(
-                        "Backed up original {} as {}.svrn",
-                        dll_name,
-                        svrn_path.display()
-                    );
-                } else {
-                    info!(
-                        "Existing {} matches Goldberg size, skipping .svrn backup (already cracked)",
-                        dll_name
-                    );
-                }
-            } else {
-                let svrn_path = dll_dir.join(format!(
-                    "{}.svrn",
-                    dll_name.strip_suffix(".dll").unwrap_or(dll_name)
-                ));
+                (Ok(meta_target), Ok(meta_source)) => meta_target.len() != meta_source.len(),
+                _ => true,
+            };
+
+            if should_replace {
                 if svrn_path.exists() {
                     fs::remove_file(&svrn_path).ok();
                 }
                 copy_with_retry(&target_dll_path, &svrn_path, 5)?;
                 info!(
-                    "Backed up {} as {}.svrn (metadata check failed)",
+                    "Backed up original {} as {}",
                     dll_name,
                     svrn_path.display()
                 );
+
+                remove_with_retry(&target_dll_path, 5)?;
+                info!("Removed original {} after backup", dll_name);
+                current_progress += substep;
+                app_handle
+                    .emit(
+                        "crack-progress",
+                        &json!({"progress": current_progress as u32, "message": "Backed up and removed original DLL"}),
+                    )
+                    .map_err(|e| format!("Failed to emit progress: {}", e))?;
+            } else {
+                info!(
+                    "Existing {} matches Goldberg size, skipping backup and replacement (already cracked)",
+                    dll_name
+                );
+                current_progress += substep;
+                app_handle
+                    .emit(
+                        "crack-progress",
+                        &json!({"progress": current_progress as u32, "message": "Skipped replacement (already cracked)"}),
+                    )
+                    .map_err(|e| format!("Failed to emit progress: {}", e))?;
+                continue;
             }
+        } else {
+            current_progress += substep;
+            app_handle
+                .emit(
+                    "crack-progress",
+                    &json!({"progress": current_progress as u32, "message": "No original DLL to backup"}),
+                )
+                .map_err(|e| format!("Failed to emit progress: {}", e))?;
         }
-        current_progress += substep;
-        app_handle
-            .emit(
-                "crack-progress",
-                &json!({"progress": current_progress as u32, "message": "Backed up original DLL"}),
-            )
-            .map_err(|e| format!("Failed to emit progress: {}", e))?;
 
         copy_with_retry(&source_dll_path, &target_dll_path, 5)?;
         info!("Copied {} to {}", dll_name, target_dll_path.display());

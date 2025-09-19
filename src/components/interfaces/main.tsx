@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Added useRef
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -16,7 +16,7 @@ import {
   AlertTriangleIcon,
   Loader2Icon,
 } from "lucide-react";
-import { selectDirectory, applyCrack } from "@/lib/tauri";
+import { selectDirectory, applyCrack, searchGame, Game } from "@/lib/tauri";
 import { checkForDRM } from "@/lib/checkForDRM";
 import { listen } from "@tauri-apps/api/event";
 import { SuccessToast } from "@/components/toast";
@@ -44,22 +44,11 @@ export function MainInterface({
   const [isDrmChecking, setIsDrmChecking] = useState(false);
   const [drmCheckAttempts, setDrmCheckAttempts] = useState(0);
 
-  const handleFolderSelect = async () => {
-    try {
-      const folderPath = await selectDirectory();
-      if (folderPath) {
-        setSelectedFolder(folderPath);
-        console.log(
-          `[${new Date().toISOString()}] Selected folder: ${folderPath}`
-        );
-      }
-    } catch (error) {
-      console.error(
-        `[${new Date().toISOString()}] Failed to select folder:`,
-        error
-      );
-    }
-  };
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState<Game[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [lastSearchTerm, setLastSearchTerm] = useState("");
+  const isSearchInProgress = useRef(false); // Added to prevent duplicate searches
 
   useEffect(() => {
     let unlisten: () => void;
@@ -68,55 +57,62 @@ export function MainInterface({
       unlisten = await listen<{ progress: number; message: string }>(
         "crack-progress",
         (event) => {
-          console.log(
-            `[${new Date().toISOString()}] Received crack-progress:`,
-            event.payload
-          );
           setProgress(event.payload.progress);
           setStatus(event.payload.message);
         }
       );
     };
 
-    setupListener().catch((error) =>
-      console.error(
-        `[${new Date().toISOString()}] Failed to setup listener:`,
-        error
-      )
-    );
+    setupListener();
 
-    return () => {
-      if (unlisten) {
-        unlisten();
-        console.log(`[${new Date().toISOString()}] Event listener cleaned up`);
-      }
-    };
+    return () => unlisten && unlisten();
   }, []);
 
   useEffect(() => {
-    const checkDRM = async () => {
-      if (!appId || drmCheckAttempts >= 3) {
-        setIsDrmChecking(false);
+    const handler = setTimeout(async () => {
+      if (!searchTerm.trim()) {
+        setSearchResults([]);
+        setLastSearchTerm("");
+        console.log(`[Search] Cleared search results for empty term.`);
+        isSearchInProgress.current = false;
         return;
       }
+      if (searchTerm !== lastSearchTerm && !isSearchInProgress.current) {
+        isSearchInProgress.current = true;
+        setIsSearching(true);
+        console.log(`[Search] Searching for: ${searchTerm}`);
+        try {
+          const results = await searchGame(searchTerm);
+          console.log(`[Search] Found ${results.length} relevant results.`);
+          setSearchResults(results);
+          setLastSearchTerm(searchTerm);
+        } catch (error) {
+          console.error(`[Search] Error searching for "${searchTerm}":`, error);
+        } finally {
+          setIsSearching(false);
+          isSearchInProgress.current = false;
+        }
+      }
+    }, 2000);
 
+    return () => clearTimeout(handler);
+  }, [searchTerm, lastSearchTerm]);
+
+  useEffect(() => {
+    const checkDRM = async () => {
+      if (!appId || drmCheckAttempts >= 3 || isDrmChecking) {
+        return;
+      }
       setIsDrmChecking(true);
       setDrmCheckAttempts((prev) => prev + 1);
-
       try {
         const hasDenuvo = await checkForDRM(appId, drmCheckAttempts);
-        if (hasDenuvo) {
-          setDrmWarning(
-            "This game contains Denuvo Anti-Tamper, you'll have to first manually crack the game's executable and afterwards use the program, otherwise the game won't work."
-          );
-        } else {
-          setDrmWarning("No DRM detected.");
-        }
-      } catch (error) {
-        console.error(
-          `[${new Date().toISOString()}] Failed to check DRM for App ID ${appId}:`,
-          error
+        setDrmWarning(
+          hasDenuvo
+            ? "This game contains Denuvo Anti-Tamper, you'll have to first manually crack the game's executable and afterwards use the program, otherwise the game won't work."
+            : ""
         );
+      } catch {
         setDrmWarning(
           `Failed to check DRM status. Attempt ${drmCheckAttempts} of 3.`
         );
@@ -127,6 +123,11 @@ export function MainInterface({
 
     checkDRM();
   }, [appId, drmCheckAttempts]);
+
+  const handleFolderSelect = async () => {
+    const folderPath = await selectDirectory();
+    folderPath && setSelectedFolder(folderPath);
+  };
 
   const handleStart = async () => {
     if (
@@ -141,36 +142,40 @@ export function MainInterface({
     setIsProcessing(true);
     setProgress(0);
     setStatus("Started");
-
     try {
-      const result = await applyCrack(appId, selectedFolder);
-      console.log(`[${new Date().toISOString()}] Cracking completed:`, result);
+      await applyCrack(appId, selectedFolder);
       setShowSuccessToast(true);
     } catch (error) {
-      console.error(`[${new Date().toISOString()}] Cracking failed:`, error);
       setStatus(
         `Error: ${error instanceof Error ? error.message : String(error)}`
       );
     } finally {
-      console.log(`[${new Date().toISOString()}] Crack process finished`);
       setIsProcessing(false);
       setIsCrackInitiated(false);
     }
   };
 
+  const handleGameSelect = (game: Game) => {
+    console.log(`[Search] Selected game: ${game.name} (AppID: ${game.appid})`);
+    setAppId(game.appid.toString());
+    setSearchTerm(game.name);
+    setLastSearchTerm(game.name);
+    setSearchResults([]);
+  };
+
   return (
     <div className="flex-1 flex items-center justify-center min-h-0">
-      <Card className="w-full max-w-2xl border-border bg-card shadow-2xl">
+      <Card className="w-full max-w-3xl border-border bg-card shadow-2xl">
         <CardHeader className="text-center pb-8">
           <CardTitle className="text-3xl font-bold text-foreground">
             Get Started
           </CardTitle>
           <CardDescription className="text-lg text-muted-foreground/90">
-            Configure the location and App ID.
+            Configure the location and select your game.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-          <div className="space-y-4" id="game-folder-section">
+          <div className="space-y-4">
             <Label
               htmlFor="folder"
               className="text-base font-semibold text-foreground"
@@ -183,12 +188,11 @@ export function MainInterface({
                 placeholder="Select your game folder..."
                 value={selectedFolder}
                 readOnly
-                className="flex-1 h-12 bg-background border-border text-base text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:ring-primary/20"
+                className="flex-1 h-12"
               />
               <Button
                 onClick={handleFolderSelect}
-                variant="outline"
-                className="cursor-pointer flex items-center gap-2 h-12 px-6 bg-background border-border hover:bg-accent hover:border-primary transition-all duration-200 text-foreground"
+                className="flex items-center gap-2 h-12 px-6"
               >
                 <FolderOpen className="h-5 w-5" />
                 Browse
@@ -196,40 +200,61 @@ export function MainInterface({
             </div>
           </div>
 
-          <div className="space-y-4" id="app-id-section">
+          <div className="space-y-4 relative">
             <Label
-              htmlFor="appid"
+              htmlFor="search"
               className="text-base font-semibold text-foreground"
             >
-              Steam App ID
+              Search
             </Label>
-            <Input
-              id="appid"
-              placeholder="Enter Steam App ID (e.g., 1030300 for Hollow Knight: Silksong)"
-              value={appId}
-              onChange={(e) => setAppId(e.target.value)}
-              className="h-12 bg-background border-border text-base text-foreground placeholder:text-muted-foreground/70 focus:border-primary focus:ring-primary/20"
-            />
-            {drmWarning && (
-              <div
-                className={cn(
-                  "flex items-center gap-2 p-3 rounded-md text-sm",
-                  drmWarning.includes("No DRM")
-                    ? "bg-primary/10 border-primary/20 text-primary"
-                    : "bg-destructive/10 border-destructive/20 text-destructive"
-                )}
-              >
-                {drmWarning.includes("No DRM") ? (
-                  <CheckCircle2Icon className={cn("h-5 w-5", "text-primary")} />
-                ) : (
-                  <AlertTriangleIcon
-                    className={cn("h-5 w-5", "text-destructive")}
-                  />
-                )}
-                <span>{drmWarning}</span>
+            <div className="flex gap-2 items-center">
+              <Input
+                id="search"
+                placeholder="Write a game name that you want to crack, remember that it has to match your actual game."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 h-12"
+              />
+              {isSearching && <Loader2Icon className="h-5 w-5 animate-spin" />}
+            </div>
+
+            {searchResults.length > 0 && (
+              <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto shadow-lg bg-gradient-to-b from-card/95 via-card/90 to-card/80 backdrop-blur-md rounded-xl p-2 custom-scroll transition-all duration-300 ease-in-out">
+                {searchResults.map((game) => (
+                  <div
+                    key={game.appid}
+                    className="w-full text-left px-4 py-2 hover:bg-primary/30 hover:text-primary-foreground hover:shadow-md cursor-pointer transition-all duration-200 rounded-lg mb-1 last:mb-0 flex items-center justify-between group"
+                    onClick={() => handleGameSelect(game)}
+                  >
+                    <span className="font-medium text-lg group-hover:text-primary-foreground transition-colors">
+                      {game.name}
+                    </span>
+                    <span className="text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">
+                      {game.appid}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
+
+          {drmWarning && (
+            <div
+              className={cn(
+                "flex items-center gap-2 p-3 rounded-md text-sm",
+                drmWarning.includes("No DRM")
+                  ? "bg-primary/10 border-primary/20 text-primary"
+                  : "bg-destructive/10 border-destructive/20 text-destructive"
+              )}
+            >
+              {drmWarning.includes("No DRM") ? (
+                <CheckCircle2Icon className="h-5 w-5 text-primary" />
+              ) : (
+                <AlertTriangleIcon className="h-5 w-5 text-destructive" />
+              )}
+              <span>{drmWarning}</span>
+            </div>
+          )}
 
           {isProcessing && (
             <div className="space-y-4">
@@ -246,26 +271,22 @@ export function MainInterface({
             </div>
           )}
 
-          {isProcessing ? null : (
-            <Button
-              onClick={handleStart}
-              disabled={
-                !appId ||
-                !selectedFolder ||
-                isProcessing ||
-                isCrackInitiated ||
-                isDrmChecking
-              }
-              className="w-full flex items-center justify-center gap-3 h-14 text-lg font-semibold bg-primary hover:bg-primary/90 disabled:opacity-50 transition-all duration-200 text-primary-foreground"
-              size="lg"
-              id="crack-button"
-            >
-              {isDrmChecking && (
-                <Loader2Icon className="h-5 w-5 animate-spin text-primary-foreground" />
-              )}
-              Crack
-            </Button>
-          )}
+          <Button
+            onClick={handleStart}
+            disabled={
+              !appId ||
+              !selectedFolder ||
+              isCrackInitiated ||
+              isProcessing ||
+              isDrmChecking
+            }
+            className="w-full flex items-center justify-center gap-3 h-14 text-lg font-semibold bg-primary hover:bg-primary/90 disabled:opacity-50 transition-all duration-200 text-primary-foreground"
+          >
+            {(isProcessing || isDrmChecking) && (
+              <Loader2Icon className="h-5 w-5 animate-spin text-primary-foreground" />
+            )}
+            Crack
+          </Button>
         </CardContent>
       </Card>
       <SuccessToast

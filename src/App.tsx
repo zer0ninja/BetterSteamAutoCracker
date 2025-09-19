@@ -15,7 +15,7 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.className =
-      "min-h-screen bg-background flex flex-col custom-scrollbar fade-scrollbar";
+      "min-h-screen bg-background flex flex-col custom-scrollbar overflow-hidden";
 
     getAppSettings()
       .then((settings) => {
@@ -32,7 +32,7 @@ export default function App() {
   }, []);
 
   const applyTheme = (theme: "light" | "dark") => {
-    document.documentElement.className = `min-h-screen bg-background flex flex-col custom-scrollbar fade-scrollbar ${
+    document.documentElement.className = `min-h-screen bg-background flex flex-col custom-scrollbar overflow-hidden ${
       theme === "dark" ? "dark" : ""
     }`;
   };
@@ -55,14 +55,14 @@ export default function App() {
   }
 
   return (
-    <div className={document.documentElement.className}>
+    <div className="min-h-screen bg-background flex flex-col custom-scrollbar overflow-hidden">
       <CustomTitlebar
         onViewChange={setViewMode}
         currentView={viewMode}
         isDark={theme === "dark"}
         onToggleTheme={toggleTheme}
       />
-      <div className="flex-1 pt-14 flex items-center justify-center p-8">
+      <div className="flex-1 pt-14 flex items-center justify-center p-8 overflow-hidden">
         {viewMode === "main" && (
           <MainInterface
             selectedFolder={selectedFolder}

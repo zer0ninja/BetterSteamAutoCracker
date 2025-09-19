@@ -1,14 +1,38 @@
+// main.rs
+
+use tauri::{command, AppHandle, Emitter, State};
+
 use dirs::data_dir;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
+use std::cmp::Ordering;
 use std::sync::Mutex;
-use tauri::{command, AppHandle, Emitter, State};
 
-use crate::goldberg::apply::apply_goldberg;
-use crate::settings::{Settings, Theme};
-use crate::steamless::apply::apply_steamless;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Game {
+    pub name: String,
+    pub appid: u32,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+struct SearchResult {
+    score: i64,
+    index: usize,
+}
+
+impl Ord for SearchResult {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.score.cmp(&self.score)
+    }
+}
+
+impl PartialOrd for SearchResult {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SteamAppDetails {
@@ -27,8 +51,13 @@ struct AppData {
     drm_notice: Option<String>,
 }
 
+// --- Commands ---
+
 #[cfg(target_os = "windows")]
 use winapi::um::winuser::MessageBeep;
+use crate::settings::{Settings, Theme};
+use crate::steamless::apply::apply_steamless;
+use crate::goldberg::apply::apply_goldberg;
 
 #[command]
 fn play_system_beep() {
@@ -51,7 +80,6 @@ pub async fn cmd_apply_crack(
     )
     .map_err(|e| format!("Failed to emit progress: {}", e))?;
 
-    // Apply Steamless DRM removal
     let steamless_result = apply_steamless(app.clone(), game_location.clone())
         .await
         .map_err(|e| format!("Steamless failed: {}", e))?;
@@ -62,7 +90,6 @@ pub async fn cmd_apply_crack(
     )
     .map_err(|e| format!("Failed to emit progress: {}", e))?;
 
-    // Apply Goldberg Steam Emulator
     let goldberg_result = apply_goldberg(app.clone(), game_location, app_id, language)
         .await
         .map_err(|e| format!("Goldberg failed: {}", e))?;
@@ -72,11 +99,76 @@ pub async fn cmd_apply_crack(
         &json!({"progress": 100, "message": "Done"}),
     )
     .map_err(|e| format!("Failed to emit progress: {}", e))?;
-
-    // Plays a system beep on success, might remove it later
+    
     play_system_beep();
-
     Ok(format!("{}\n{}", steamless_result, goldberg_result))
+}
+
+// ! TODO: Improve the searching algorithm, while it's functional, it's not very efficient
+// ! and can produce suboptimal results for certain queries.  e.g. writing "Lies of" will 
+// ! not just return Lies of P, but also other games that are very unrelated to "Lies of" chars.
+#[command]
+pub async fn cmd_get_game(title: String) -> Result<Vec<Game>, String> {
+    if title.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let url = "https://raw.githubusercontent.com/0xSovereign/steamapplist/refs/heads/main/data/apps.json";
+    let client = reqwest::Client::new();
+
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch game list: {}", e))?;
+
+    let games: Vec<Game> = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse game list: {}", e))?;
+
+    let normalized_title = title.to_lowercase();
+    let search_terms: Vec<&str> = normalized_title.split_whitespace().filter(|s| !s.is_empty()).collect();
+
+    let mut valid_matches: Vec<SearchResult> = Vec::new();
+
+    for (idx, game) in games.iter().enumerate() {
+        let game_name_lower = game.name.to_lowercase();
+        let mut all_terms_found = true;
+
+        for term in &search_terms {
+            if !game_name_lower.contains(term) {
+                all_terms_found = false;
+                break;
+            }
+        }
+
+        if all_terms_found {
+            let mut score: i64 = 0;
+            
+            if game_name_lower.contains(&normalized_title) {
+                score += 10000;
+            } else {
+                score += 5000;
+            }
+            
+            score -= game_name_lower.len() as i64;
+
+            valid_matches.push(SearchResult { score, index: idx });
+        }
+    }
+
+    valid_matches.sort_by(|a, b| b.score.cmp(&a.score));
+
+    let results: Vec<Game> = valid_matches
+        .into_iter()
+        .take(5)
+        .map(|res| games[res.index].clone())
+        .collect();
+
+    println!("[Search] Found {} relevant results.", results.len());
+
+    Ok(results)
 }
 
 #[command]

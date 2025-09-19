@@ -9,6 +9,14 @@ export interface Settings {
 }
 
 /**
+ * Interface representing a Steam game.
+ */
+export interface Game {
+  appid: number;
+  name: string;
+}
+
+/**
  * Retrieves the current settings.
  * @returns A promise that resolves to the current settings.
  * @throws An error if the settings retrieval fails.
@@ -100,5 +108,19 @@ export async function applyCrack(
     return `DRM Check: ${drmResult}\nCrack Result: ${result}`;
   } catch (error) {
     throw new Error(`Failed to apply crack: ${error}`);
+  }
+}
+
+/**
+ * Searches for up to 5 matching games by name.
+ * @param title The search term (game title).
+ * @returns An array of matched games with name and appid.
+ */
+export async function searchGame(title: string): Promise<Game[]> {
+  try {
+    return await invoke<Game[]>("cmd_get_game", { title });
+  } catch (error) {
+    console.error("Error searching game:", error);
+    return [];
   }
 }

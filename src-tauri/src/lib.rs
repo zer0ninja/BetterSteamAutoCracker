@@ -11,7 +11,7 @@ pub mod setup;
 pub mod steamless;
 
 use crate::command::{
-    cmd_apply_crack, cmd_check_drm, cmd_get_settings, cmd_get_windows_theme, cmd_set_settings,
+    cmd_apply_crack, cmd_check_drm, cmd_get_game, cmd_get_settings, cmd_get_windows_theme, cmd_set_settings,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -32,6 +32,7 @@ pub fn run() {
             cmd_get_windows_theme,
             cmd_get_settings,
             cmd_set_settings,
+            cmd_get_game,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();
