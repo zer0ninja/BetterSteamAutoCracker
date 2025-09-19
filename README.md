@@ -11,42 +11,6 @@ BetterSteamAutoCracker is a Tauri-based desktop app for Windows that automates S
 - Auto-downloads dependencies (DLLs, fonts, sounds) from S3
 - Backs up original files as `.svrn` and `Goldberg.zip`
 
-## Building from Source
-
-**Prerequisites**:
-
-- Rust (via [rustup](https://rustup.rs/))
-- [Node.js](https://nodejs.org/en) (v16+) and [Bun](https://bun.sh/)
-
-**Steps**:
-
-1. Clone the repo:
-
-   - `git clone https://github.com/0xSovereign/BetterSteamAutoCracker.git`
-
-2. Change the directory:
-
-   - `cd BetterSteamAutoCracker`
-
-3. Install dependencies:
-
-   - `bun install`
-
-4. Edit config:
-
-   - Go to `src-tauri/src` and rename `config.rs.example` to `config.rs` and include the API key
-
-5. Build:
-   - `bun run tauri build`
-
-And the executable will be in `src-tauri/target/release`
-
-## Known Issues
-
-- Some games with unique DLC setups may fail; report App IDs.
-- File locks may require retries (up to 5 attempts).
-- Denuvo-protected games need manual cracking first.
-
 ## Credits
 
 - **Detanup01 & Mr.Goldberg**: Goldberg Steam Emulator
@@ -60,6 +24,16 @@ MIT License. See [LICENSE](LICENSE).
 ## Disclaimer
 
 Provided "as is" without warranty. Developers are not liable for damages or legal issues.
+
+## Screenshots
+
+| Overview (Light)                                       | Overview (Dark)                                      |
+| ------------------------------------------------------ | ---------------------------------------------------- |
+| ![Overview Light](docs\screenshots\overview-light.png) | ![Overview Dark](docs\screenshots\overview-dark.png) |
+
+| Check (Light)                                    | Check (Dark)                                   |
+| ------------------------------------------------ | ---------------------------------------------- |
+| ![Check Light](docs\screenshots\check-light.png) | ![Check Dark](docs\screenshots\check-dark.png) |
 
 ---
 
