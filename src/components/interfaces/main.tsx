@@ -48,7 +48,9 @@ export function MainInterface({
   const [searchResults, setSearchResults] = useState<Game[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [lastSearchTerm, setLastSearchTerm] = useState("");
-  const isSearchInProgress = useRef(false); // Added to prevent duplicate searches
+  // Added to prevent duplicate searches, especially when selecting from results
+  // TODO: Refactor the search logic to be more efficient
+  const isSearchInProgress = useRef(false);
 
   useEffect(() => {
     let unlisten: () => void;
