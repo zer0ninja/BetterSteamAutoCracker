@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"; // Added useRef
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -48,8 +48,6 @@ export function MainInterface({
   const [searchResults, setSearchResults] = useState<Game[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [lastSearchTerm, setLastSearchTerm] = useState("");
-  // Added to prevent duplicate searches, especially when selecting from results
-  // TODO: Refactor the search logic to be more efficient
   const isSearchInProgress = useRef(false);
 
   useEffect(() => {
@@ -207,28 +205,28 @@ export function MainInterface({
               htmlFor="search"
               className="text-base font-semibold text-foreground"
             >
-              Search
+              Search Steam Game
             </Label>
             <div className="flex gap-2 items-center">
               <Input
                 id="search"
-                placeholder="Write a game name that you want to crack, remember that it has to match your actual game."
+                placeholder="Search your game to crack... (e.g. 'Hollow Knight: Silksong')"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 h-12"
+                className="flex-1 h-12 border focus:ring-2 focus:ring-primary/50 transition-all duration-200"
               />
               {isSearching && <Loader2Icon className="h-5 w-5 animate-spin" />}
             </div>
 
             {searchResults.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto shadow-lg bg-gradient-to-b from-card/95 via-card/90 to-card/80 backdrop-blur-md rounded-xl p-2 custom-scroll transition-all duration-300 ease-in-out">
+              <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto shadow-lg bg-card border border-border rounded-xl p-2 transition-all duration-300">
                 {searchResults.map((game) => (
                   <div
                     key={game.appid}
-                    className="w-full text-left px-4 py-2 hover:bg-primary/30 hover:text-primary-foreground hover:shadow-md cursor-pointer transition-all duration-200 rounded-lg mb-1 last:mb-0 flex items-center justify-between group"
+                    className="w-full text-left px-4 py-3 bg-card hover:bg-primary/30 hover:text-primary-foreground cursor-pointer rounded-lg mb-2 last:mb-0 flex items-center justify-between transition-all duration-200"
                     onClick={() => handleGameSelect(game)}
                   >
-                    <span className="font-medium text-lg group-hover:text-primary-foreground transition-colors">
+                    <span className="font-medium text-lg truncate group-hover:text-primary-foreground transition-colors">
                       {game.name}
                     </span>
                     <span className="text-sm text-muted-foreground group-hover:text-muted-foreground/80 transition-colors">

@@ -109,9 +109,6 @@ pub async fn cmd_apply_crack(
     Ok(format!("{}\n{}", steamless_result, goldberg_result))
 }
 
-// ! TODO: Improve the searching algorithm, while it's functional, it's not very efficient
-// ! and can produce suboptimal results for certain queries.  e.g. writing "Lies of" will 
-// ! not just return Lies of P, but also other games that are very unrelated to "Lies of" chars.
 #[command]
 pub async fn cmd_get_game(title: String) -> Result<Vec<Game>, String> {
     if title.trim().is_empty() {
@@ -133,30 +130,34 @@ pub async fn cmd_get_game(title: String) -> Result<Vec<Game>, String> {
         .map_err(|e| format!("Failed to parse game list: {}", e))?;
 
     let normalized_title = title.to_lowercase();
-    let search_terms: Vec<&str> = normalized_title.split_whitespace().filter(|s| !s.is_empty()).collect();
+    let search_terms: Vec<String> = normalized_title.split_whitespace().filter(|s| !s.is_empty()).map(String::from).collect();
 
     let mut valid_matches: Vec<SearchResult> = Vec::new();
 
     for (idx, game) in games.iter().enumerate() {
         let game_name_lower = game.name.to_lowercase();
-        let mut all_terms_found = true;
+        let game_words: Vec<&str> = game_name_lower.split_whitespace().collect();
 
-        for term in &search_terms {
-            if !game_name_lower.contains(term) {
+        let mut all_terms_found = true;
+        let mut term_index = 0;
+
+        // Check if all search terms match at the start in the correct order
+        for (i, game_word) in game_words.iter().enumerate() {
+            if term_index >= search_terms.len() {
+                break;
+            }
+            if *game_word != search_terms[term_index] {
                 all_terms_found = false;
                 break;
             }
+            term_index += 1;
         }
 
-        if all_terms_found {
-            let mut score: i64 = 0;
-            
-            if game_name_lower.contains(&normalized_title) {
-                score += 10000;
-            } else {
+        if all_terms_found && term_index == search_terms.len() {
+            let mut score: i64 = 10000;
+            if game_name_lower == normalized_title {
                 score += 5000;
             }
-            
             score -= game_name_lower.len() as i64;
 
             valid_matches.push(SearchResult { score, index: idx });
