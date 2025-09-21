@@ -4,7 +4,7 @@ use std::ptr;
 
 pub fn show_webview2_dialog() -> c_int {
     let message = "Better Steam AutoCracker requires Microsoft WebView2.\n\n\
-                   It appears that WebView2 is not installed on your system.\n\n
+                   It appears that WebView2 is not installed on your system.\n\
                    Please download and install it from the official Microsoft website.";
     let title = "WebView2 Required";
 
