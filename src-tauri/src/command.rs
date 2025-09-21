@@ -1,10 +1,4 @@
-// command.rs
-// Includes all Tauri commands that can be invoked from the frontend.
-// Each command is annotated with `#[command]` and can be async or sync.
-
 // TODO: Fix the search algorithm to be more efficient and return better results.
-// TODO: Organize commands better
-
 use tauri::{command, AppHandle, Emitter, State};
 
 use dirs::data_dir;

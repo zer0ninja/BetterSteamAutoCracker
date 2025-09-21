@@ -20,10 +20,23 @@ pub struct Settings {
     pub theme: Theme,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AppData {
+    pub passed_messageboxw: bool,
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Settings {
             theme: Theme::Light,
+        }
+    }
+}
+
+impl Default for AppData {
+    fn default() -> Self {
+        AppData {
+            passed_messageboxw: false,
         }
     }
 }
@@ -83,4 +96,46 @@ pub fn load_settings() -> Settings {
             theme: get_system_theme(),
         }
     }
+}
+
+pub fn load_app_data() -> AppData {
+    let data_path = data_dir()
+        .map(|dir| dir.join(FOLDER).join("settings").join("data.json"))
+        .unwrap_or_else(|| PathBuf::from("data.json"));
+
+    if data_path.exists() {
+        match fs::read_to_string(&data_path) {
+            Ok(data) => match serde_json::from_str::<AppData>(&data) {
+                Ok(app_data) => app_data,
+                Err(e) => {
+                    eprintln!("Failed to parse app data: {}, using default", e);
+                    AppData::default()
+                }
+            },
+            Err(e) => {
+                eprintln!(
+                    "Failed to read app data from {}: {}, using default",
+                    data_path.display(),
+                    e
+                );
+                AppData::default()
+            }
+        }
+    } else {
+        AppData::default()
+    }
+}
+
+pub fn save_app_data(app_data: &AppData) -> Result<(), Box<dyn std::error::Error>> {
+    let data_path = data_dir()
+        .map(|dir| dir.join(FOLDER).join("settings").join("data.json"))
+        .unwrap_or_else(|| PathBuf::from("data.json"));
+
+    if let Some(parent) = data_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    let data = serde_json::to_string_pretty(app_data)?;
+    fs::write(&data_path, data)?;
+    Ok(())
 }
