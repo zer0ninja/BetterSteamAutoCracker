@@ -130,7 +130,11 @@ pub async fn cmd_get_game(title: String) -> Result<Vec<Game>, String> {
         .map_err(|e| format!("Failed to parse game list: {}", e))?;
 
     let normalized_title = title.to_lowercase();
-    let search_terms: Vec<String> = normalized_title.split_whitespace().filter(|s| !s.is_empty()).map(String::from).collect();
+    let search_terms: Vec<String> = normalized_title
+        .split_whitespace()
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect();
 
     let mut valid_matches: Vec<SearchResult> = Vec::new();
 
@@ -141,19 +145,21 @@ pub async fn cmd_get_game(title: String) -> Result<Vec<Game>, String> {
         let mut all_terms_found = true;
         let mut term_index = 0;
 
-        // Check if all search terms match at the start in the correct order
-        for (i, game_word) in game_words.iter().enumerate() {
+        // Check if all search terms appear in order (anywhere in the name)
+        for game_word in game_words.iter() {
             if term_index >= search_terms.len() {
                 break;
             }
-            if *game_word != search_terms[term_index] {
-                all_terms_found = false;
-                break;
+            // Strip common punctuation for comparison
+            let clean_game_word = game_word.trim_matches(|c: char| c == ':' || c == '(' || c == ')' || c == '[' || c == ']');
+            if clean_game_word == search_terms[term_index] {
+                term_index += 1;
             }
-            term_index += 1;
         }
 
-        if all_terms_found && term_index == search_terms.len() {
+        all_terms_found = term_index == search_terms.len();
+
+        if all_terms_found {
             let mut score: i64 = 10000;
             if game_name_lower == normalized_title {
                 score += 5000;
