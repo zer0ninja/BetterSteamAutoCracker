@@ -71,7 +71,7 @@ export async function selectDirectory(): Promise<string | null> {
  */
 export async function checkDrm(
   appId: string,
-  attempt: number = 1
+  attempt: number = 1,
 ): Promise<string> {
   if (attempt > 3) {
     throw new Error("Maximum DRM check attempts reached.");
@@ -94,7 +94,7 @@ export async function checkDrm(
 export async function applyCrack(
   appId: string,
   folderPath: string,
-  language?: string
+  language?: string,
 ): Promise<string> {
   try {
     const drmResult = await checkDrm(appId);

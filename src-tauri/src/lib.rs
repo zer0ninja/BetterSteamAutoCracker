@@ -8,21 +8,27 @@ pub mod config;
 pub mod dialog;
 pub mod error;
 pub mod goldberg;
+pub mod search;
 pub mod settings;
 pub mod setup;
 pub mod steamless;
 
 use crate::command::{
-    cmd_apply_crack, cmd_check_drm, cmd_get_game, cmd_get_settings, cmd_get_windows_theme, cmd_set_settings,
+    cmd_apply_crack, cmd_check_drm, cmd_get_settings, cmd_get_windows_theme, cmd_set_settings,
 };
-use crate::dialog::{show_webview2_dialog, show_foss_dialog};
+use crate::dialog::{show_foss_dialog, show_webview2_dialog};
+use crate::search::{
+    cmd_get_cache_stats, cmd_get_game, cmd_get_game_by_appid, cmd_refresh_game_cache,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     env_logger::init();
 
     // Check for WebView2 installation
-    let is_webview2_installed = std::path::Path::new("C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application").exists();
+    let is_webview2_installed =
+        std::path::Path::new("C:\\Program Files (x86)\\Microsoft\\EdgeWebView\\Application")
+            .exists();
 
     if !is_webview2_installed {
         show_webview2_dialog();
@@ -62,6 +68,9 @@ pub fn run() {
             cmd_get_settings,
             cmd_set_settings,
             cmd_get_game,
+            cmd_get_cache_stats,
+            cmd_get_game_by_appid,
+            cmd_refresh_game_cache,
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

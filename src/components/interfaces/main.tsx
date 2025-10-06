@@ -15,6 +15,7 @@ import {
   CheckCircle2Icon,
   AlertTriangleIcon,
   Loader2Icon,
+  Hash,
 } from "lucide-react";
 import { selectDirectory, applyCrack, searchGame, Game } from "@/lib/tauri";
 import { checkForDRM } from "@/lib/checkForDRM";
@@ -59,7 +60,7 @@ export function MainInterface({
         (event) => {
           setProgress(event.payload.progress);
           setStatus(event.payload.message);
-        }
+        },
       );
     };
 
@@ -110,11 +111,11 @@ export function MainInterface({
         setDrmWarning(
           hasDenuvo
             ? "This game contains Denuvo Anti-Tamper, you'll have to first manually crack the game's executable and afterwards use the program, otherwise the game won't work."
-            : ""
+            : "",
         );
       } catch {
         setDrmWarning(
-          `Failed to check DRM status. Attempt ${drmCheckAttempts} of 3.`
+          `Failed to check DRM status. Attempt ${drmCheckAttempts} of 3.`,
         );
       } finally {
         setIsDrmChecking(false);
@@ -147,7 +148,7 @@ export function MainInterface({
       setShowSuccessToast(true);
     } catch (error) {
       setStatus(
-        `Error: ${error instanceof Error ? error.message : String(error)}`
+        `Error: ${error instanceof Error ? error.message : String(error)}`,
       );
     } finally {
       setIsProcessing(false);
@@ -162,6 +163,17 @@ export function MainInterface({
     setLastSearchTerm(game.name);
     setSearchResults([]);
   };
+
+  const handleAppIdSearch = (appIdNum: number) => {
+    console.log(`[Search] Using AppID: ${appIdNum}`);
+    setAppId(appIdNum.toString());
+    setSearchTerm(`AppID: ${appIdNum}`);
+    setSearchResults([]);
+  };
+
+  // Checks if seach term is a number (AppID)
+  const isAppIdInput = /^\d+$/.test(searchTerm.trim());
+  const appIdNum = isAppIdInput ? parseInt(searchTerm.trim()) : null;
 
   return (
     <div className="flex-1 flex items-center justify-center min-h-0">
@@ -218,6 +230,21 @@ export function MainInterface({
               {isSearching && <Loader2Icon className="h-5 w-5 animate-spin" />}
             </div>
 
+            {/* AppID detection, still needs some work */}
+            {isAppIdInput && appIdNum && (
+              <div className="mt-2">
+                <Button
+                  onClick={() => handleAppIdSearch(appIdNum)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Hash className="h-4 w-4" />
+                  Use AppID: {appIdNum}
+                </Button>
+              </div>
+            )}
+
             {searchResults.length > 0 && (
               <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto shadow-lg bg-card border border-border rounded-xl p-2 transition-all duration-300">
                 {searchResults.map((game) => (
@@ -244,7 +271,7 @@ export function MainInterface({
                 "flex items-center gap-2 p-3 rounded-md text-sm",
                 drmWarning.includes("No DRM")
                   ? "bg-primary/10 border-primary/20 text-primary"
-                  : "bg-destructive/10 border-destructive/20 text-destructive"
+                  : "bg-destructive/10 border-destructive/20 text-destructive",
               )}
             >
               {drmWarning.includes("No DRM") ? (

@@ -5,13 +5,14 @@
     "name": "Sovereign"
   },
   "description": "An improved version of Steam Auto Cracker with a lot of enhancements and with a beautiful user interface.",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "linux:compile": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",

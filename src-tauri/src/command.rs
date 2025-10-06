@@ -1,37 +1,12 @@
-// TODO: Fix the search algorithm to be more efficient and return better results.
 use tauri::{command, AppHandle, Emitter, State};
 
 use dirs::data_dir;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+
 use std::fs;
 use std::path::PathBuf;
-use std::cmp::Ordering;
 use std::sync::Mutex;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Game {
-    pub name: String,
-    pub appid: u32,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-struct SearchResult {
-    score: i64,
-    index: usize,
-}
-
-impl Ord for SearchResult {
-    fn cmp(&self, other: &Self) -> Ordering {
-        other.score.cmp(&self.score)
-    }
-}
-
-impl PartialOrd for SearchResult {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SteamAppDetails {
@@ -50,13 +25,11 @@ struct AppData {
     drm_notice: Option<String>,
 }
 
-// --- Commands ---
-
-#[cfg(target_os = "windows")]
-use winapi::um::winuser::MessageBeep;
+use crate::goldberg::apply::apply_goldberg;
 use crate::settings::{Settings, Theme};
 use crate::steamless::apply::apply_steamless;
-use crate::goldberg::apply::apply_goldberg;
+#[cfg(target_os = "windows")]
+use winapi::um::winuser::MessageBeep;
 
 #[command]
 fn play_system_beep() {
@@ -98,83 +71,9 @@ pub async fn cmd_apply_crack(
         &json!({"progress": 100, "message": "Done"}),
     )
     .map_err(|e| format!("Failed to emit progress: {}", e))?;
-    
+
     play_system_beep();
     Ok(format!("{}\n{}", steamless_result, goldberg_result))
-}
-
-#[command]
-pub async fn cmd_get_game(title: String) -> Result<Vec<Game>, String> {
-    if title.trim().is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let url = "https://raw.githubusercontent.com/0xSovereign/steamapplist/refs/heads/main/data/apps.json";
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get(url)
-        .send()
-        .await
-        .map_err(|e| format!("Failed to fetch game list: {}", e))?;
-
-    let games: Vec<Game> = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse game list: {}", e))?;
-
-    let normalized_title = title.to_lowercase();
-    let search_terms: Vec<String> = normalized_title
-        .split_whitespace()
-        .filter(|s| !s.is_empty())
-        .map(String::from)
-        .collect();
-
-    let mut valid_matches: Vec<SearchResult> = Vec::new();
-
-    for (idx, game) in games.iter().enumerate() {
-        let game_name_lower = game.name.to_lowercase();
-        let game_words: Vec<&str> = game_name_lower.split_whitespace().collect();
-
-        let mut all_terms_found = true;
-        let mut term_index = 0;
-
-        // Check if all search terms appear in order (anywhere in the name)
-        for game_word in game_words.iter() {
-            if term_index >= search_terms.len() {
-                break;
-            }
-            // Strip common punctuation for comparison
-            let clean_game_word = game_word.trim_matches(|c: char| c == ':' || c == '(' || c == ')' || c == '[' || c == ']');
-            if clean_game_word == search_terms[term_index] {
-                term_index += 1;
-            }
-        }
-
-        all_terms_found = term_index == search_terms.len();
-
-        if all_terms_found {
-            let mut score: i64 = 10000;
-            if game_name_lower == normalized_title {
-                score += 5000;
-            }
-            score -= game_name_lower.len() as i64;
-
-            valid_matches.push(SearchResult { score, index: idx });
-        }
-    }
-
-    valid_matches.sort_by(|a, b| b.score.cmp(&a.score));
-
-    let results: Vec<Game> = valid_matches
-        .into_iter()
-        .take(5)
-        .map(|res| games[res.index].clone())
-        .collect();
-
-    println!("[Search] Found {} relevant results.", results.len());
-
-    Ok(results)
 }
 
 #[command]

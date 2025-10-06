@@ -1,6 +1,6 @@
 [package]
 name = "better-steam-autocracker"
-version = "0.1.5"
+version = "0.1.6"
 description = "An improved version of Steam Auto Cracker with a lot of enhancements and with a beautiful user interface."
 authors = ["Sovereign"]
 edition = "2021"
@@ -35,7 +35,7 @@ serde_json = "1"
 
 # HTTP
 reqwest = { version = "0.12.23", features = ["json", "blocking", "rustls-tls"] }
-tokio = "1.47.1"
+tokio = { version = "1.47.1", features = ["sync"] }
 futures = "0.3.31"
 futures-util = "0.3.31"
 
