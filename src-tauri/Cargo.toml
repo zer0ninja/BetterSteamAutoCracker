@@ -1,6 +1,6 @@
 [package]
 name = "better-steam-autocracker"
-version = "0.1.6"
+version = "1.0.0"
 description = "An improved version of Steam Auto Cracker with a lot of enhancements and with a beautiful user interface."
 authors = ["Sovereign"]
 edition = "2021"
